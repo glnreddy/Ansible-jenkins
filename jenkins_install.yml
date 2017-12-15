@@ -1,0 +1,8 @@
+- hosts: ci-server
+  remote_user: root
+  become: true
+  gather_facts: true
+  
+  roles:
+    - java
+    - jenkins.bak
