@@ -1,0 +1,95 @@
+---
+
+jenkins_connection_delay: 5
+jenkins_connection_retries: 60
+jenkins_hostname: localhost
+jenkins_home: /var/lib/jenkins
+jenkins_http_port: 8080
+jenkins_jar_location: /opt/jenkins-cli.jar
+jenkins_plugins: []
+jenkins_update_plugins: true
+jenkins_package_state: present
+jenkins_version: "2.90"
+jenkins_url_prefix: ""
+jenkins_install_recommended_plugins: true
+jenkins_recommended_plugins:
+  - "ace-editor"
+  - "ant"
+  - "antisamy-markup-formatter"
+  - "branch-api"
+  - "build-timeout"
+  - "cloudbees-folder"
+  - "credentials"
+  - "credentials-binding"
+  - "durable-task"
+  - "email-ext"
+  - "external-monitor-job"
+  - "git"
+  - "git-client"
+  - "github"
+  - "github-api"
+  - "github-branch-source"
+  - "github-organization-folder"
+  - "git-server"
+  - "gradle"
+  - "handlebars"
+  - "icon-shim"
+  - "javadoc"
+  - "jquery-detached"
+  - "junit"
+  - "ldap"
+  - "mailer"
+  - "mapdb-api"
+  - "matrix-auth"
+  - "matrix-project"
+  - "momentjs"
+  - "pam-auth"
+  - "pipeline-build-step"
+  - "pipeline-input-step"
+  - "pipeline-rest-api"
+  - "pipeline-stage-step"
+  - "pipeline-stage-view"
+  - "plain-credentials"
+  - "scm-api"
+  - "script-security"
+  - "ssh-credentials"
+  - "ssh-slaves"
+  - "structs"
+  - "subversion"
+  - "timestamper"
+  - "token-macro"
+  - "windows-slaves"
+  - "workflow-aggregator"
+  - "workflow-api"
+  - "workflow-basic-steps"
+  - "workflow-cps"
+  - "workflow-cps-global-lib"
+  - "workflow-durable-task-step"
+  - "workflow-job"
+  - "workflow-multibranch"
+  - "workflow-scm-step"
+  - "workflow-step-api"
+  - "workflow-support"
+  - "ws-cleanup"
+
+
+
+jenkins_ansible_user:
+   username: "ansibleUserName"
+   password: "ansiblePassWord"
+   userperm: "hudson.model.Hudson.Administer"
+
+jenkins_users: []
+jenkins_users_example:
+  - username: "admin1"
+    password: "password1"
+    userperm: "hudson.model.Hudson.Administer"
+    sshpubkey: ""
+  - username: "admin2"
+    password: "password2"
+    userperm: "hudson.model.Hudson.Administer"
+    sshpubkey: ""
+  - username: "user3"
+    password: "password3"
+    userperm: "hudson.model.Hudson.Read"
+    sshpubkey: ""
