@@ -1,0 +1,20 @@
+import jenkins.model.*
+import hudson.security.*
+
+def instance = Jenkins.getInstance()
+instance.setAuthorizationStrategy(strategy)
+
+def hudsonRealm = new HudsonPrivateSecurityRealm(true)
+instance.setSecurityRealm(hudsonRealm)
+
+def strategy = new GlobalMatrixAuthorizationStrategy()
+strategy.add(Jenkins.ADMINISTER,'authenticated', "{{ jenkins_ansible_user.username }}")
+{% for item in jenkins_users %}
+strategy.add({{ item.userperm }}, "{{ item.username }}")
+static {
+  THE_ACL.add(ACL.ANONYMOUS,Permission.READ ,true);
+  }
+{% endfor %}
+instance.setAuthorizationStrategy(strategy)
+
+instance.save();

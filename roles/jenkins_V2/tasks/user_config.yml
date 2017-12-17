@@ -1,0 +1,38 @@
+---
+- name: Check if the Jenkins user has already been created
+  stat:
+    path: "{{ jenkins_home }}/users/{{ username }}/config.xml"
+  register: chkuser
+
+- name: Make sure the user directory exists
+  file:
+    path: "{{ jenkins_home }}/users/{{ username }}"
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: 0755
+
+- name: Create jenkins user configure file if it does not exist
+  template:
+    src: "config-user.xml.j2"
+    dest: "{{ jenkins_home }}/users/{{ username }}/config.xml"
+    owner: jenkins
+    group: jenkins
+    force: false
+    mode: 0644
+
+- name: Get the jenkins-cli jarfile from the Jenkins server.
+  get_url:
+    url: "http://{{ jenkins_hostname }}:{{ jenkins_http_port }}{{ jenkins_url_prefix }}/jnlpJars/jenkins-cli.jar"
+    dest: "{{ jenkins_jar_location }}"
+    mode: 0440
+  register: jenkins_local_cli
+  until: "'OK' in jenkins_local_cli.msg or 'file already exists' in jenkins_local_cli.msg"
+  retries: 5
+  delay: 10
+  check_mode: no
+
+- name: Create Jenkins user using jenkins-cli
+  shell: echo '{{ lookup("template", "./groovy-create-user.j2") }}' | sudo java -jar {{ jenkins_home }}/jenkins-cli.jar -s http://{{ jenkins_hostname }}:{{ jenkins_http_port }} groovy =
+  register: jenkins_user
+  become: true

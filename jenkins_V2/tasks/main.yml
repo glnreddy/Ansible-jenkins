@@ -1,0 +1,110 @@
+---
+
+#Variable setup.
+
+
+- name: Include OS-Specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_os_family }}.yml"
+  tags: vars
+- name: Define jenkins_repo_url
+  set_fact:
+    jenkins_repo_url: "{{ __jenkins_repo_url }}"
+  when: jenkins_repo_url is not defined
+
+- name: Define jenkins_repo_key_url
+  set_fact:
+    jenkins_repo_key_url: "{{ __jenkins_repo_key_url }}"
+  when: jenkins_repo_key_url is not defined
+
+- name: Define jenkins_pkg_url
+  set_fact:
+    jenkins_pkg_url: "{{ __jenkins_pkg_url }}"
+  when: jenkins_pkg_url is not defined
+
+# Setup/install tasks.
+- include: setup-RedHat.yml
+  when: ansible_os_family == 'RedHat'
+
+
+- name: Restart Jenkins 
+  service: name=jenkins state=restarted
+
+- include: setup-Debian.yml
+  when: ansible_os_family == 'Debian'
+
+- name: Ensure Jenkins is started and runs on startup.
+  service: name=jenkins state=started enabled=yes
+
+- name: Create Jenkins Init Script Directory
+  file:
+    path: "{{ jenkins_home }}/init.groovy.d"
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: 0755
+  become: true
+
+# Configure Jenkins init settings.
+- include: settings.yml
+
+
+- set_fact:
+    jenkins_users_all: '{{ [jenkins_ansible_user] + jenkins_users }}'
+
+- include: user_config.yml username="{{ item.username }}" password="{{ item.password }}" sshpubkey="{{ item.sshpubkey|default('') }}"
+  with_items: "{{ jenkins_users_all }}"
+- name: Make sure the Jenkins service is enabled and running
+  service:
+    name: jenkins
+    enabled: true
+    state: started
+  register: doservice
+
+
+- include_tasks: pup.yml
+
+
+- name: Create queue item authenticator configuration
+  copy:
+    src: jenkins.security.QueueItemAuthenticatorConfiguration.xml
+    dest: "~jenkins/jenkins.security.QueueItemAuthenticatorConfiguration.xml"
+
+- name: Create job-dsl security configuration
+  copy:
+    src: javaposse.jobdsl.plugin.GlobalJobDslSecurityConfiguration.xml
+    dest: "~jenkins/javaposse.jobdsl.plugin.GlobalJobDslSecurityConfiguration.xml"
+
+- name: Create download settings configuration
+  copy:
+    src: jenkins.model.DownloadSettings.xml
+    dest: "~jenkins/jenkins.model.DownloadSettings.xml"
+
+
+
+# Restart with a task instead of a handler, since we need those changes to
+# be applied right away so that we can use the admin password in API calls.
+- name: Restart Jenkins if necessary
+  service: name=jenkins state=restarted
+
+- name: Wait for Jenkins to become available
+  wait_for: port=8080
+
+
+# Make sure Jenkins starts, then configure Jenkins.
+- name: Ensure Jenkins is started and runs on startup.
+  service: name=jenkins state=started enabled=yes
+
+
+# Check the availability after settings
+- include: check-availability.yml
+
+
+- name: Remove Jenkins security init scripts after first startup.
+  file:
+    path: "{{ jenkins_home }}/init.groovy.d/basic-security.groovy"
+    state: absent
+
+
+

@@ -1,0 +1,5 @@
+<jenkins>
+  {% for item in jenkins_plugins %}
+  <install plugin='{{ item }}@current' />
+  {% endfor %}
+</jenkins>
