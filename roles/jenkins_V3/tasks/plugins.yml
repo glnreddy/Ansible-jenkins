@@ -1,0 +1,77 @@
+- name: Check if all required Jenkins plugins are already installed
+  uri:
+    url: "http://{{ jenkins_hostname }}:{{ jenkins_http_port }}/pluginManager/prevalidateConfig"
+    method: POST
+    follow_redirects: all
+    body: "{{ lookup('template', './api-install-plugins.xml.j2') }}"
+    force_basic_auth: true
+    user: "{{ jenkins_ansible_user.username }}"
+    password: "{{ jenkins_ansible_user.password }}"
+    HEADER_Content-Type: "text/xml"
+  register: pluginchk
+  ignore_errors: true
+
+- name: Use variable to trigger plugins installation if required
+  set_fact:
+    plugins_doinstall: false
+
+- name: Require plugin installation if at least one plugin is missing
+  set_fact:
+    plugins_doinstall: true
+  with_items: "{{ pluginchk.json }}"
+  when: '"{{ item.mode }}" == "missing"'
+
+- name: Install all required plugins using the Jenkins API if required
+  uri:
+    url: "http://{{ jenkins_hostname }}:{{ jenkins_http_port }}/pluginManager/installNecessaryPlugins"
+    method: POST
+    follow_redirects: all
+    body: "{{ lookup('template', './api-install-plugins.xml.j2') }}"
+    HEADER_Content-Type: "text/xml"
+    force_basic_auth: true
+    user: "{{ jenkins_ansible_user.username }}"
+    password: "{{ jenkins_ansible_user.password }}"
+  when: plugins_doinstall == True
+
+- name: Wait until the plugins installation has finished
+  uri:
+    url: "http://{{ jenkins_hostname }}:{{ jenkins_http_port }}/updateCenter/api/json?pretty&tree=jobs[id,type,status[type]]"
+    force_basic_auth: true
+    user: "{{ jenkins_ansible_user.username }}"
+    password: "{{ jenkins_ansible_user.password }}"
+  register: operstate
+  until: '"Pending" not in "{{ operstate.json.jobs }}"'
+  delay: 5
+  retries: 30
+  when: plugins_doinstall == True
+
+- name: Let Jenkins settle down
+  pause:
+    seconds: 10
+  when: plugins_doinstall == True
+
+- name: Create or update main Jenkins configuration file
+  template:
+    src: "config-main.xml.j2"
+    dest: "{{ jenkins_home }}/config.xml"
+    owner: jenkins
+    group: jenkins
+    mode: 0755
+    backup: true
+  register: setconfig1
+
+- name: Restart Jenkins service if required
+  service:
+    name: jenkins
+    state: restarted
+  register: doservice
+  when: plugins_doinstall or setconfig1.changed
+
+- name: Wait until the Jenkins service is ready
+  wait_for:
+    host: "{{ 127.0.0.1 }}"
+    port: "{{ jenkins_http_port }}"
+    delay: 10
+    timeout: 120
+  when: plugins_doinstall or setconfig1.changed
+

@@ -1,0 +1,47 @@
+---
+
+jenkins_executors: 2
+jenkins_connection_delay: 5
+jenkins_connection_retries: 60
+jenkins_hostname: localhost
+jenkins_home: /var/lib/jenkins
+jenkins_http_port: 8080
+jenkins_jar_location: /var/lib/jenkins/jenkins-cli.jar
+jenkins_plugins: []
+jenkins_update_plugins: true
+jenkins_package_state: present
+jenkins_version: "2.95"
+jenkins_url_prefix: ""
+
+
+
+jenkins_ansible_user:
+
+  username: "ansibleUserName"
+
+  password: "ansiblePassWord"
+
+  userperm: "hudson.model.Hudson.Administer"
+
+
+
+# List of additional jenkins user to create (define your own following example)
+
+#jenkins_users: []
+
+jenkins_users:
+
+  - username: "admin3"
+
+    password: "password3"
+
+    userperm: "hudson.model.Hudson.Administer"
+
+    sshpubkey: ""
+
+
+
+
+jenkins_plugins_base: ['job-dsl', 'git', 'matrix-auth']
+jenkins_plugins_extra: ['ansicolor', 'greenballs', 'copyartifact', 'envinject']
+jenkins_plugins: '{{ jenkins_plugins_base + jenkins_plugins_extra }}'
