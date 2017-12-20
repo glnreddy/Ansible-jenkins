@@ -1,0 +1,21 @@
+
+<?xml version='1.0' encoding='UTF-8'?>
+<user>
+  <fullName>{{ jenkins_ansible_user }}</fullName>
+  <description></description>
+  <properties>
+    <jenkins.security.LastGrantedAuthoritiesProperty>
+      <roles>
+        <string>authenticated</string>
+      </roles>
+    </jenkins.security.LastGrantedAuthoritiesProperty>
+    {% set cursalt = "salt123" %}
+    {% set password_with_salt = jenkins_ansible_password + "{" + cursalt + "}" %}
+    <hudson.security.HudsonPrivateSecurityRealm_-Details>
+      <passwordHash>{{ cursalt }}:{{ password_with_salt|hash('sha256') }}</passwordHash>
+    </hudson.security.HudsonPrivateSecurityRealm_-Details>
+    <org.jenkinsci.main.modules.cli.auth.ssh.UserPropertyImpl>
+      <authorizedKeys>{{ sshpubkey }}</authorizedKeys>
+    </org.jenkinsci.main.modules.cli.auth.ssh.UserPropertyImpl>
+  </properties>
+</user>

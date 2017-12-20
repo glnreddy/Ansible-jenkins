@@ -1,0 +1,30 @@
+#!groovy
+import hudson.security.*
+import jenkins.model.*
+
+def instance = Jenkins.getInstance()
+def hudsonRealm = new HudsonPrivateSecurityRealm(true)
+def users = hudsonRealm.getAllUsers()
+users_s = users.collect { it.toString() }
+
+// Create the admin user account if it doesn't already exist.
+if ("{{ jenkins_ansible_user }}" in users_s) {
+    println "Admin user already exists - updating password"
+
+    def user = hudson.model.User.get('{{ jenkins_ansible_password }}');
+    def password = hudson.security.HudsonPrivateSecurityRealm.Details.fromPlainPassword('{{ jenkins_ansible_password }}')
+    user.addProperty(password)
+    user.save()
+}
+else {
+    println "--> creating local admin user"
+    
+    hudsonRealm=new hudson.security.HudsonPrivateSecurityRealm(true);
+    hudsonRealm.createAccount('{{ jenkins_ansible_user }}', '{{ jenkins_ansible_password }}')
+    instance.setSecurityRealm(hudsonRealm)
+
+    def strategy = new GlobalMatrixAuthorizationStrategy()
+    strategy.add(Jenkins.ADMINISTER, "{{ jenkins_ansible_user }}")
+    instance.setAuthorizationStrategy(strategy)
+    instance.save()
+}

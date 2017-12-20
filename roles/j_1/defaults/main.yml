@@ -1,0 +1,26 @@
+---
+
+jenkins_executors: 2
+jenkins_connection_delay: 5
+jenkins_connection_retries: 60
+jenkins_hostname: 104.196.160.31 
+jenkins_home: /var/lib/jenkins
+jenkins_http_port: 8080
+jenkins_jar_location: /var/lib/jenkins/jenkins-cli.jar
+jenkins_plugins: []
+jenkins_update_plugins: true
+jenkins_package_state: present
+jenkins_version: "2.95"
+jenkins_url_prefix: ""
+
+jenkins_ansible_user: ansibleUserName
+jenkins_ansible_password: ansiblePassWord
+userperm: "hudson.model.Hudson.Administer"
+sshpubkey: /home/gln/.ssh/id_rsa.pub
+
+jenkins_plugins_base: ['job-dsl','LDAP Email Plugin','MSBuild Plugin', 'git', 'matrix-auth']
+jenkins_plugins_extra: ['ansicolor','openid', 'greenballs', 'copyartifact', 'envinject']
+jenkins_plugins: '{{ jenkins_plugins_base + jenkins_plugins_extra }}'
+
+
+
