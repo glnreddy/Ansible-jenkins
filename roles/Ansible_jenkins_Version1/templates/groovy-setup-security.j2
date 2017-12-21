@@ -1,0 +1,17 @@
+#!groovy
+import jenkins.model.*
+import hudson.security.*
+
+def instance = Jenkins.getInstance()
+
+def hudsonRealm = new HudsonPrivateSecurityRealm(false)
+instance.setSecurityRealm(hudsonRealm)
+
+def strategy = new GlobalMatrixAuthorizationStrategy()
+strategy.add(Jenkins.ADMINISTER, "{{ jenkins_ansible_user.username }}")
+{% for item in jenkins_users %}
+strategy.add({{ item.userperm }}, "{{ item.username }}")
+{% endfor %}
+instance.setAuthorizationStrategy(strategy)
+
+instance.save();

@@ -1,0 +1,63 @@
+---
+
+jenkins_executors: 2
+jenkins_connection_delay: 5
+jenkins_connection_retries: 60
+jenkins_hostname: localhost 
+jenkins_home: /var/lib/jenkins
+jenkins_http_port: 8080
+jenkins_jar_location: /var/lib/jenkins/jenkins-cli.jar
+jenkins_cli_command: java -jar {{ jenkins_home }}/jenkins-cli.jar -s http://{{ jenkins_hostname }}:{{ jenkins_http_port }}
+jenkins_update_plugins: true
+jenkins_package_state: present
+jenkins_version: "2.90"
+jenkins_url_prefix: ""
+
+jenkins_admin_users:
+  - Admin
+  - 'hudson.security.HudsonPrivateSecurityRealm:admin'
+
+jenkins_ansible_user:
+
+    username: "ansibleUserName"
+
+    password: "ansiblePassWord"
+
+    userperm: "hudson.model.Hudson.Administer"
+
+jenkins_users:
+
+  - username: "admin3"
+
+    password: "password3"
+
+    userperm: "hudson.model.Hudson.Administer"
+
+    sshpubkey: ""
+
+
+
+
+jenkins_plugins_recommended:
+  - cloudbees-folder
+  - antisamy-markup-formatter
+  - build-timeout
+  - credentials-binding
+  - timestamper
+  - ws-cleanup
+  - ant
+  - gradle
+  - workflow-aggregator
+  - github-branch-source
+  - pipeline-github-lib
+jenkins_plugins_extra:
+  - pipeline-stage-view
+  - git
+  - subversion
+  - ssh-slaves
+  - matrix-auth
+  - pam-auth
+  - ldap
+  - email-ext
+  - mailer
+

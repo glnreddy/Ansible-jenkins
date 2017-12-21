@@ -1,0 +1,41 @@
+
+- name: List Plugins for Install
+  shell: "{{ jenkins_cli_command }} list-plugins | cut -f 1 -d ' '"
+  become: true
+  become_user: jenkins
+  register: plugins_installed
+  changed_when: false
+
+# FIXME: All of the plugins can be joined into a space-separated list and run in a single command.
+- name: Install Plugins
+  shell: "{{ jenkins_cli_command }} install-plugin {{ item }}"
+  when: item not in plugins_installed.stdout
+  with_items:
+    - "{{ jenkins_plugins_recommended }}"
+    - "{{ jenkins_plugins_extra }}"
+  become: true
+  become_user: jenkins
+  notify:
+    - "Restart jenkins"
+
+- name: List Plugins for Update
+  shell: "{{ jenkins_cli_command }} list-plugins | grep ')$' | cut -f 1 -d ' ' | awk 1 ORS=' '"
+  become: true
+  become_user: jenkins
+  register: plugins_updates
+  changed_when: false
+
+- name: Update Plugins
+  shell: "{{ jenkins_cli_command }} install-plugin {{ item }}"
+  with_items: "{{ plugins_updates.stdout.split() }}"
+  when: plugins_updates.stdout != ''
+  become: true
+  become_user: jenkins
+  notify:
+    - "Restart jenkins"
+
+
+- name: Create Jenkins security using jenkins-cli
+  shell: echo '{{ lookup("template", "./groovy-setup-security.j2") }}' | java -jar /opt/jenkins/jenkins-cli.jar -s http://{{ jenkins_hostname }}:{{ jenkins_http_port}}  groovy =
+  register: jenkins_user
+  become: true
