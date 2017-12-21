@@ -1,0 +1,54 @@
+- name: Refresh Update Center
+  shell:
+    cmd: |
+      cat <<EOF |
+      // These are the basic imports that Jenkin's interactive script console 
+      // automatically includes.
+      import jenkins.*;
+      import jenkins.model.*;
+      import hudson.*;
+      import hudson.model.*;
+      // Out of the box, Jenkins has no Update Center metadata, and so the CLI's
+      // 'install-plugins' command will fail. This script pulls that data.
+      def updateCenter = Jenkins.instance.updateCenter
+      def result = updateCenter.updateAllSites()
+      EOF
+      java -jar {{ jenkins_home }}/jenkins-cli.jar -s http://{{ jenkins_hostname }}:{{ jenkins_http_port }} groovy =
+  become: true
+  become_user: jenkins
+  # it runs every time.
+  changed_when: false
+
+- name: List Plugins for Install
+  shell: "java -jar {{ jenkins_home }}/jenkins-cli.jar -s http://{{ jenkins_hostname }}:{{ jenkins_http_port }} list-plugins | cut -f 1 -d ' '"
+  become: true
+  become_user: jenkins
+  register: plugins_installed
+  changed_when: false
+
+- name: Install Plugins
+  shell: "java -jar {{ jenkins_home }}/jenkins-cli.jar -s http://{{ jenkins_hostname }}:{{ jenkins_http_port }} install-plugin {{ item }}"
+  when: item not in plugins_installed.stdout
+  with_items:
+    - "{{ jenkins_plugins_recommended }}"
+    - "{{ jenkins_plugins_extra }}"
+  become: true
+  become_user: jenkins
+  notify:
+    - "Restart jenkins"
+
+- name: List Plugins for Update
+  shell: "java -jar {{ jenkins_home }}/jenkins-cli.jar -s http://{{ jenkins_hostname }}:{{ jenkins_http_port }} list-plugins | grep ')$' | cut -f 1 -d ' ' | awk 1 ORS=' '"
+  become: true
+  become_user: jenkins
+  register: plugins_updates
+  changed_when: false
+
+- name: Update Plugins
+  shell: "java -jar {{ jenkins_home }}/jenkins-cli.jar -s http://{{ jenkins_hostname }}:{{ jenkins_http_port }} install-plugin {{ item }}"
+  with_items: "{{ plugins_updates.stdout.split() }}"
+  when: plugins_updates.stdout != ''
+  become: true
+  become_user: jenkins
+  notify:
+    - "Restart jenkins"

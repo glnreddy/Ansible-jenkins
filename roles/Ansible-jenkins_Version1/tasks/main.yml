@@ -24,39 +24,36 @@
   when: jenkins_pkg_url is not defined
 
 # Setup/install tasks.
-- include_tasks: setup-RedHat.yml
+- include: setup-RedHat.yml
   when: ansible_os_family == 'RedHat'
 
 
 - name: Restart Jenkins 
   service: name=jenkins state=restarted
 
-- include: setup-Debian.yml
-  when: ansible_os_family == 'Debian'
 
 - name: Ensure Jenkins is started and runs on startup.
   service: name=jenkins state=started enabled=yes
 
 
 # Configure Jenkins init settings.
-- import_tasks: settings.yml
+- include: settings.yml
 
 - name: Ensure Jenkins is started and runs on startup.
   service: name=jenkins state=started enabled=yes
 
-- name: Wait for Jenkins to start up before proceeding.
-  shell: "curl -D - --silent --max-time 5 http://{{ jenkins_hostname }}:{{ jenkins_http_port }}{{ jenkins_url_prefix }}/cli/"
-  register: result
-  until: (result.stdout.find("403 Forbidden") != -1) or (result.stdout.find("200 OK") != -1) and (result.stdout.find("Please wait while") == -1)
-  retries: "{{ jenkins_connection_retries }}"
-  delay: "{{ jenkins_connection_delay }}"
-  changed_when: false
-  check_mode: no
+#- name: Wait for Jenkins to start up before proceeding.
+ # shell: "curl -D - --silent --max-time 5 http://{{ jenkins_hostname }}:{{ jenkins_http_port }}{{ jenkins_url_prefix }}/cli/"
+ # register: result
+ # until: (result.stdout.find("403 Forbidden") != -1) or (result.stdout.find("200 OK") != -1) and (result.stdout.find("Please wait while") == -1)
+ # retries: "{{ jenkins_connection_retries }}"
+ # delay: "{{ jenkins_connection_delay }}"
+ # changed_when: false
+ # check_mode: no
+ # ignore_errors: yes
 
-#- set_fact:
- #   jenkins_users_all: '{{ [jenkins_ansible_user] }}'
 
-- import_tasks: user_config.yml
+- include_tasks: user_config.yml
 
 - name: Make sure the Jenkins service is enabled and running
   service:
@@ -66,7 +63,22 @@
   register: doservice
 
 
-- import_tasks: pup1.yml
+- import_tasks: pup.yml
+
+
+- name: Grab Jenkins Web UI Content
+  # By default, Jenkins 2 is set to require auth, so the only page we can grab 
+  # without getting a 403 and redirect is the login page.
+  uri:
+    url: "http://localhost:{{ jenkins_http_port }}{{ jenkins_context_path | default('') }}/login"
+    return_content: true
+  environment:
+    no_proxy: localhost
+  register: jenkins_ui
+
+- name: Verify Jenkins Web UI Content
+  action: fail
+  when: jenkins_ui.content.find('Jenkins ver. 2') == -1
 
 
 - name: Create queue item authenticator configuration
@@ -88,10 +100,6 @@
 - name: Ensure Jenkins is started and runs on startup.
   service: name=jenkins state=started enabled=yes
 
-- name: Remove Jenkins security init scripts after first startup.
-  file:
-    path: "{{ jenkins_home }}/init.groovy.d/basic-security.groovy"
-    state: absent
 
 
 
