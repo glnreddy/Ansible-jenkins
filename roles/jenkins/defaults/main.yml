@@ -1,0 +1,43 @@
+---
+# Optional method of pinning a specific version of Jenkins and/or overriding the
+# default Jenkins packaging URL.
+jenkins_version: "1.644"
+# jenkins_pkg_url: "https://www.example.com"
+
+jenkins_connection_delay: 5
+jenkins_connection_retries: 60
+jenkins_home: /var/lib/jenkins
+jenkins_hostname: localhost
+jenkins_http_port: 8080
+jenkins_https_port: 8443
+#Can set to true and enable Jenkins Key Store in case if want to expose server to outside World
+jenkins_https: false
+jenkins_jar_location: /opt/jenkins-cli.jar
+
+
+jenkins_plugins: 
+  - pipeline-github-lib
+  - pipeline-stage-view
+  - git
+  - subversion
+  - ssh-slaves
+  - matrix-auth
+  - pam-auth
+  - ldap
+  - email-ext
+  - mailer
+  - job-dsl
+
+jenkins_url_prefix: ""
+jenkins_java_options: "-Djenkins.install.runSetupWizard=false -Dhudson.diyChunking=false"
+
+
+jenkins_admin_username: JenkinsAdmin
+jenkins_admin_password: JenkinsPasswd
+jenkins_admin_password_file: ""
+
+jenkins_init_changes:
+  - option: "JENKINS_ARGS"
+    value: "--prefix={{ jenkins_url_prefix }}{{ ('Debian' in ansible_os_family) | ternary(' --httpsPort={{ jenkins_https_port }} --httpsKeyStore={{ jenkins_jks }} --httpsKeyStorePassword={{ jenkins_jks_pass }}','')}}"
+  - option: "{{ jenkins_java_options_env_var }}"
+    value: "{{ jenkins_java_options }}"

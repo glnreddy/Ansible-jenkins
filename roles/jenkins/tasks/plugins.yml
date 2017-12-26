@@ -1,0 +1,59 @@
+---
+# Jenkins doesn't allow updates via CLI, though that is required before plugins
+# can be installed via CLI. 
+- name: Create Jenkins updates folder.
+  file:
+    path: "{{ jenkins_home }}/updates"
+    owner: jenkins
+    group: jenkins
+    mode: 0755
+    state: directory
+  register: jenkins_plugins_folder_create
+
+- name: Update Jenkins plugin data.
+  shell: curl -L https://updates.jenkins-ci.org/update-center.json | sed '1d;$d' > "{{ jenkins_home }}/updates/default.json"
+  args:
+    creates: "{{ jenkins_home }}/updates/default.json"
+
+- name: Permissions for default.json updates info.
+  file:
+    path: "{{ jenkins_home }}/updates/default.json"
+    owner: jenkins
+    group: jenkins
+    mode: 0755
+  when: jenkins_plugins_folder_create.changed
+
+- name: Check if using a password file for authentication
+  stat:
+    path: "{{ jenkins_admin_password_file }}"
+  register: adminpasswordfile
+
+- set_fact:
+    jenkins_admin_password_param: "--password {{ jenkins_admin_password|default('') }}"
+  when: jenkins_admin_password is defined
+
+- set_fact:
+    jenkins_admin_password_param: "--password-file {{ jenkins_admin_password_file|default('') }}"
+  when: (adminpasswordfile.stat.exists) and
+        (jenkins_admin_password_file is defined)
+
+- set_fact:
+    jenkins_port: ":{{ jenkins_http_port }}"
+  when: jenkins_http_port != -1
+
+- set_fact:
+    jenkins_port: ":{{ jenkins_https_port }}"
+  when: jenkins_http_port == -1
+
+- name: Install Jenkins plugins using password.
+  command: >
+    java
+    -jar {{ jenkins_jar_location }}{{ (jenkins_http_port == -1) | ternary(" -noCertificateCheck","") }}
+    -s {{ (jenkins_http_port == -1) | ternary("https","http") }}://{{ jenkins_hostname }}{{ jenkins_port|default('') }}{{ jenkins_url_prefix | default("") }}/
+    install-plugin {{ item }}
+    --username {{ jenkins_admin_username }}
+    {{ jenkins_admin_password_param }}
+    creates="{{ jenkins_home }}/plugins/{{ item }}.jpi"
+  with_items: "{{ jenkins_plugins }}"
+  when: jenkins_admin_password != ""
+  notify: restart jenkins
