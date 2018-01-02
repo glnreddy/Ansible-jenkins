@@ -29,8 +29,6 @@ node {
       // store the plan file to be used later on potentially different node
       stash includes: 'tfplan', name: 'tfplan'
     }  
-  }
-}
 // We don't run the rest of the code when we aren't running in master branch
 // So pull requests only run a plan
 if(pullRequest){
